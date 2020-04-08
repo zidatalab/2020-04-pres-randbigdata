@@ -1,0 +1,51 @@
+---
+output:
+  revealjs::revealjs_presentation:
+    transition: fade
+    theme: white
+    highlight: tango
+    css: zireveal.css
+---
+
+```{r setup, include=FALSE}
+library("tidyverse")
+library("zicolors")
+library("knitr")
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## <br><br><br>R und Big(ger than memory) Data 
+Dr. Lars E. Kroll
+Fachbereich Data Science und Versorgungsanalysen
+
+
+## Hintergrund{data-background="#0086C5"}
+
+## Was ist das Problem?
+
+**R** ist bei kleinen Datensätzen sehr schnell, weil es alle Daten im Arbeitsspeicher des Computers hält.
+
+Dies wird, wenn Datensätze analyisiert werden sollen, bei Arbeit mit **R** wird im Vergleich zu Paketen wie *sas* oder *SPSS* problematisch.
+
+Diese Präsentation führt in Techniken zur Analyse von Datensätzen ein, die auf die Festplatte eines Computers, nicht aber komplett in seinen Speicher passen.
+
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Code and Output
+
+```{r}
+summary(cars) %>% kable()
+```
+
+## Slide with Plot
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
