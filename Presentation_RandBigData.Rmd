@@ -2,16 +2,25 @@
 output:
   revealjs::revealjs_presentation:
     transition: fade
+    center: false
     theme: white
     highlight: tango
     css: zireveal.css
+    fig_width: 8
+    fig_height: 4.5
+    fig_caption: false
+    self_contained: false
 ---
 
 ```{r setup, include=FALSE}
 library("tidyverse")
 library("zicolors")
 library("knitr")
+library("forcats")
+library("zicolors")
+library("biglm")
 knitr::opts_chunk$set(echo = FALSE)
+options(knitr.kable.NA = '')
 ```
 
 
@@ -31,21 +40,163 @@ Dies wird, wenn Datensätze analyisiert werden sollen, bei Arbeit mit **R** wird
 Diese Präsentation führt in Techniken zur Analyse von Datensätzen ein, die auf die Festplatte eines Computers, nicht aber komplett in seinen Speicher passen.
 
 
-## Slide with Bullets
+## Technischer Hintergrund
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Code and Output
-
-```{r}
-summary(cars) %>% kable()
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.frame("Typ"=c("RAM","HD","SSD","M2"),"Geschwindigkeit"=c(21.3,.220,.530,5)) %>% 
+  ggplot(aes(x=fct_reorder(Typ,Geschwindigkeit),y=Geschwindigkeit,fill=Typ))+geom_bar(stat="identity",show.legend = F) + theme_zi_titels() + scale_fill_zi("main4colors")  + labs(x="",y="Geschwindigkeit GB/s")
 ```
 
-## Slide with Plot
+Arbeitsspeicher (RAM) ist *100 mal schneller* als eine klassische Festplatte und *4 mal* schneller als der schnellste M2 PCIE4 SSD Speicher. Je mehr Daten im RAM analysiert werden, desto besser.
 
-```{r, echo=FALSE}
-plot(cars)
+## Lösungsansätze
+
+Um große Datensätze mit R zu bearbeiten stehen verschiedene Lösungsansätze zur Verfügung:
+
+**Gute Lösungen** aber heute nicht Thema:
+
+- Mehr RAM kaufen (bis zu 256GB sind aktuell möglich)
+- Arbeit mit Zufallsstichproben und verkleinerten Datensätzen
+
+**Heute Thema**
+
+- Arbeiten mit R und `DBI` direkt auf Datenbanken
+- Parallelisierung von gestückelten Daten
+
+## Arbeit mit Datenbanken{data-background="#B1C800"}
+
+## R und Datenbanken
+
+Grudnsätzlich können Daten, die bereits in einer relationalen oder nichtrelationalen Datenbank vorgehalten werden, immer auch direkt über geeignete Frontends oder mit R analysiert werden.
+
+R ist aber auch in der Lage, Datensätze ohne Installation zusätzlicher Software in eine Datenbank auszulagern und auf dieser zu analysieren. Dadurch ist eine Nutzung von R mit Datensätzen möglich, die nicht in den Speicher des lokalen PC passen.
+
+Das Vorgehen soll exemplarisch mit dem Beispieldatensatz *nycflights13* veranschaulicht werden.
+
+## nycflights13
+
+Der Testdatensatz umfasst `r nrow(nycflights13::flights)` Inlandsflüge, die im Jahr 2013 von den Flughäfen der Stadt New York City in Richtung von Zielen innerhalb der USA gestartet sind.
+
+Als zusätzliche Metadaten sind Informationen zu Airlines, Flughäfen, Wetter, and Flugzeugen enthalten. 
+
+Der Datensatz passt zwar in der Regel in den Arbeitsspeicher, alle Techniken funkionieren aber auch mit größeren Datensätzen.
+
+## Erzeugen der Testdateien auf der Festplatte
+
+Hier werden aus dem mitgelieferten Beispieldaten csv Dateien erstellt und gespeichert. In der Realität liegen wahrscheinlich bereits csv-Dateien vor, die bspw. mit dem *SQL Navigator* o.ä. aus einer DB extrahiert wurden. 
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
+library(nycflights13)
+write.csv(nycflights13::airlines,"data/airlines.csv")
+write.csv(nycflights13::flights,"data/flights.csv")
+write.csv(nycflights13::airports,"data/airports.csv")
+write.csv(nycflights13::planes,"data/planes.csv")
 ```
 
+## Erzeugen einer Datenbank aus den Testdateien auf der Festplatte
+
+Häufig entstehen bereits beim einlesen der Daten Probleme. Es ist darum mit R möglich, große Dateien von der Festplatte direkt in eine Datenbank zu laden und anschließend auf der Datenbank Analysen durchzuführen. Wir laden die Daten gestückelt, um zu simulieren, dass sie nicht in den Speicher passen.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Create an empty DB
+library("RSQLite")
+mylocaldb <- dbConnect(RSQLite::SQLite(), "data/mylocaldb.sqlite")
+for (myname in c("flights","airlines","airports","planes")) {
+dbWriteTable(conn = mylocaldb, name = myname, value = paste0("data/",myname,".csv"), 
+             row.names = FALSE, header = TRUE, overwrite=TRUE)  
+}
+```
+
+## Exemplarische Analyse auf der Datenbank I
+
+Tabellen mit R verknüpfen:
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+flights <- tbl(mylocaldb,"flights")
+planes <- tbl(mylocaldb,"planes")
+airports <- tbl(mylocaldb,"airports")
+```
+
+Was sind die 4 Flugzeuge mit den meisten Starts in NYC 2013?
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+flights %>% count(tailnum) %>% arrange(-n) %>% filter(tailnum!="NA") %>% head(4) %>% left_join(planes,by="tailnum") %>%
+  mutate(model=paste(manufacturer,model)) %>% select(Kennung=tailnum,"Starts"=n,Modell=model,Baujahr=year) %>% knitr::kable()
+```
+
+## Exemplarische Analyse auf der Datenbank II
+
+Flugrouten finden
+
+```{r message=FALSE, warning=FALSE, echo=TRUE}
+allflights <- flights %>% group_by(origin,dest) %>% count() %>% ungroup() %>% mutate(id=row_number())
+plotdata <- bind_rows(allflights %>% select(id,n,faa=origin) %>% left_join(.,airports %>% select(faa,lat,lon)) %>% collect() %>% mutate(type="origin"),allflights %>% select(id,n,faa=dest) %>% left_join(.,airports %>% select(faa,lat,lon)) %>% collect() %>% mutate(type="destination"))
+```
+
+Geodaten laden und Ergebnisdatensatz aus Route und Fluganzahl für Plotten vorbereiten
+
+```{r message=FALSE, warning=FALSE,  echo=TRUE}
+library("sf")
+library("rnaturalearth")
+world <- ne_countries(scale = "medium", returnclass = "sf")
+connections_sf <- plotdata %>% filter(!is.na(lat)) %>% st_as_sf(coords = c("lon", "lat"), crs = 4326, agr = "constant") %>% group_by(id) %>%
+  summarise(do_union = FALSE) %>%
+  st_cast("LINESTRING") %>% left_join(plotdata %>% select(id,n))
+```
+
+## Inlands-Flugziele von NYC mit mehr als 2500 Flügen 2013
+```{r echo=TRUE, message=FALSE, warning=FALSE, fig.height = 3, fig.width = 5,fig.align = "center"}
+ggplot(connections_sf) + theme_void() + geom_sf(data=world,fill="lightgrey") + 
+  geom_sf(data=.%>% filter(n<=2500),show.legend = F,color="darkgrey")+ 
+  geom_sf(data=.%>% filter(n>2500),show.legend = F,color="darkred",size=1.5) + 
+  coord_sf(expand=FALSE,xlim =c(st_bbox(connections_sf)[1],st_bbox(connections_sf)[3]),ylim=c(st_bbox(connections_sf)[2],st_bbox(connections_sf)[4]))
+```
+
+## Regressionsanalysen auf der Datenbank | biglm
+
+*Fragestellung: Je weiter das Ziel entfernt, desto weniger pünktlich ein Flug?*
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+model <- flights %>% 
+  mutate(delayedbg10min=100*(dep_delay>10),
+         distance=distance/1000,
+         dephour=round(round(dep_time/100)),
+         dephourkat=case_when(
+           dephour<5~"Nachts",
+           dephour>=5 & dephour<9 ~"morgens", 
+           dephour>=9 & dephour<18 ~"tagsüber",
+           dephour>=18 ~"abends")) %>% 
+  biglm::biglm(delayedbg10min~1+distance+dephourkat, data=.)
+broom::tidy(model) %>% knitr::kable() 
+```
+
+## Geschwindigkeit DB vs. Arbeitsspeicher
+
+Die Arbeit mit einer DB als Backend ist deutlich langsamer als die Arbeit im RAM. Für eine einfache Aggregation auf Basis der Beispieldaten ergibt sich folgendes Bild:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+flights_ram<- flights %>% collect()
+start_time <- Sys.time()
+result <- flights_ram %>% group_by(carrier) %>% summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T))
+end_time <- Sys.time()
+t_ram <- round((end_time - start_time)*1000)
+start_time <- Sys.time()
+result <- flights %>% group_by(carrier) %>% summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T)) %>% collect()
+end_time <- Sys.time()
+t_sqlite <- round((end_time - start_time)*1000)
+as.data.frame(cbind("Method"=c("RAM","SQLITE"),"Result (msec)"=c(t_ram,t_sqlite))) %>% knitr::kable()
+
+```
+
+
+
+
+## Zwischenfazit
+
+Mit Datenbanken als Backend lassen sich die meisten deskriptiven Aufgaben in R bearbeiten.
+
+Die Lösung bietet gegenüber der Arbeit im Arbeitsspeicher jedoch Geschwindigkeitsnachteile, wenn die Daten in den Arbeitsspeicher passen.
+
+## Arbeit mit "Big Data Lösungen"{data-background="#0086C5"}
+
+## Hintergrund 
+
+Lösungen für "Big Data" versuchen die Limitationen von Datenbanken, die Tabellen häufig Zeilenweise durchgehen zu umgehen und setzen dabei auf Varianten des von Google entwickelten Paradigmas **"MapReduce"**.

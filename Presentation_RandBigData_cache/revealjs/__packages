@@ -1,0 +1,16 @@
+base
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+usethis
+devtools
+zicolors
+knitr
+nycflights13
+RSQLite
