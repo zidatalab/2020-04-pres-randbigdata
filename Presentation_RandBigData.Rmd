@@ -1,6 +1,7 @@
 ---
 output:
   revealjs::revealjs_presentation:
+    pagetitle: R und Big(ger than memory) Data
     transition: fade
     center: false
     theme: white
@@ -28,7 +29,7 @@ options(knitr.kable.NA = '')
 
 **Dr. Lars E. Kroll** \
 *Fachbereich Data Science und Versorgungsanalysen*
-![](https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=175)
+![](https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125)
 
 ## Hintergrund{data-background="#0086C5"}
 
@@ -239,7 +240,7 @@ Die **Analysezeit**  steigt im Fall der *Datenbanken* also proportional zur Anza
 Je höher die Zahl der Knoten, desto größer ist der Overhead durch den Algorithmus, aber auch der potentielle Geschwindigkeitsvorteil bei sehr großen Datenmengen. 
 
 ```{r}
-tibble("Row"=seq(3,10,1)) %>% mutate(Zeilen = 10^Row, Dauer_pro_Zeile=.001,Knoten=8,Maps=Knoten,Reduces=Knoten,Overhead=.1*(Maps+Reduces),Dauer_DB=Zeilen*Dauer_pro_Zeile,Dauer_MR=(Zeilen/Knoten)*Dauer_pro_Zeile+Dauer_pro_Zeile*Maps+Dauer_pro_Zeile*Reduces+Overhead,Zeilen=format(Zeilen,scientific = F,big.mark = ".",decimal.mark = ","),Unterschied=paste(round(100*(Dauer_MR/Dauer_DB)),"%"),Dauer_MR=round(Dauer_MR),Dauer_DB=round(Dauer_DB)) %>% select(-Row,-Maps,-Reduces,Overhead) %>% knitr::kable()
+tibble("Row"=seq(3,10,1)) %>% mutate(Zeilen = 10^Row, Dauer_pro_Zeile=.001,Knoten=6,Maps=Knoten,Reduces=Knoten,Overhead=.1*(Maps+Reduces),Dauer_DB=Zeilen*Dauer_pro_Zeile,Dauer_MR=(Zeilen/Knoten)*Dauer_pro_Zeile+Dauer_pro_Zeile*Maps+Dauer_pro_Zeile*Reduces+Overhead,Zeilen=format(Zeilen,scientific = F,big.mark = ".",decimal.mark = ","),Unterschied=paste(round(100*(Dauer_MR/Dauer_DB)),"%"),Dauer_MR=format(round(Dauer_MR),big.mark = "."),Dauer_DB=format(round(Dauer_DB),big.mark = ".",scientific = F)) %>% select(-Row,-Maps,-Reduces,Overhead) %>% knitr::kable(digits = 4)
 ```
 
 *Annahme:* \
@@ -294,7 +295,7 @@ end_time <- Sys.time()
 dauer <- round((end_time - start_time)*1000)
 ```
 
-Die Analyse dauert mit `r paste(dauer,"ms")` zwar länger als im RAM (~150 ms), aber nur etwa halb so lange wie mit SQLite (~700 ms). 
+Die Analyse dauert mit `r paste(dauer,"ms")` zwar länger als im RAM (~150 ms), aber teilweise nur etwa halb so lange, wie mit SQLite (~300/700 ms). 
 
 
 ## Logistische Regression

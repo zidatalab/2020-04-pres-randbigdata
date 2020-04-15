@@ -18,6 +18,10 @@
   color:#0086C5;
  }
 
+.reveal h2 {
+font-size: 1.3em;
+}
+
 .reveal section {
     text-align: left;
 }
