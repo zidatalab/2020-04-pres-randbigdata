@@ -7,4 +7,4 @@ zi.de
 
 This Repo contains my Presentation with tips on working with bigdata from R
 
-[Start Presentation](lekroll/slides-randbigdata)
+[Start Presentation](Presentation_RandBigData.html)
