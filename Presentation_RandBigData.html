@@ -2099,11 +2099,6 @@ document.getElementsByTagName('head')[0].appendChild(style);
 <section id="hypotetischer-geschwindidkeitsvergleich" class="slide level2">
 <h2>Hypotetischer Geschwindidkeitsvergleich</h2>
 <p>Je höher die Zahl der Knoten, desto größer ist der Overhead durch den Algorithmus, aber auch der potentielle Geschwindigkeitsvorteil bei sehr großen Datenmengen.</p>
-<pre><code>## Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
-## &#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing
-
-## Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
-## &#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing</code></pre>
 <table>
 <thead>
 <tr class="header">
@@ -2218,26 +2213,26 @@ Der Overhead für Mapreduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0
 <section id="disk.frame-geschwindigkeitstest" class="slide level2">
 <h2><strong>disk.frame</strong> Geschwindigkeitstest</h2>
 <p>Die chunk-Anzahl erntspricht hier der Anzahl der CPUs (max. Performance).</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(disk.frame))</a>
-<a class="sourceLine" id="cb11-2" title="2"><span class="kw">setup_disk.frame</span>() <span class="co"># 6 Workers</span></a></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(</a>
-<a class="sourceLine" id="cb12-2" title="2">  <span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a>
-<a class="sourceLine" id="cb12-3" title="3"></a>
-<a class="sourceLine" id="cb12-4" title="4">start_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
-<a class="sourceLine" id="cb12-5" title="5">result &lt;-<span class="st"> </span>flights <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(carrier) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">Mean_delay=</span><span class="kw">mean</span>(sched_dep_time<span class="op">-</span>dep_time,<span class="dt">na.rm=</span>T)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">collect</span>()</a>
-<a class="sourceLine" id="cb12-6" title="6">end_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
-<a class="sourceLine" id="cb12-7" title="7">dauer &lt;-<span class="st"> </span><span class="kw">round</span>((end_time <span class="op">-</span><span class="st"> </span>start_time)<span class="op">*</span><span class="dv">1000</span>)</a></code></pre></div>
-<p>Die Analyse dauert mit 362 ms zwar länger als im RAM (~150 ms), aber teilweise nur etwa halb so lange, wie mit SQLite (~300/700 ms).</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(disk.frame))</a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">setup_disk.frame</span>() <span class="co"># 6 Workers</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(</a>
+<a class="sourceLine" id="cb11-2" title="2">  <span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4">start_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
+<a class="sourceLine" id="cb11-5" title="5">result &lt;-<span class="st"> </span>flights <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(carrier) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">Mean_delay=</span><span class="kw">mean</span>(sched_dep_time<span class="op">-</span>dep_time,<span class="dt">na.rm=</span>T)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">collect</span>()</a>
+<a class="sourceLine" id="cb11-6" title="6">end_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
+<a class="sourceLine" id="cb11-7" title="7">dauer &lt;-<span class="st"> </span><span class="kw">round</span>((end_time <span class="op">-</span><span class="st"> </span>start_time)<span class="op">*</span><span class="dv">1000</span>)</a></code></pre></div>
+<p>Die Analyse dauert mit 199 ms zwar länger als im RAM (~150 ms), aber teilweise nur etwa halb so lange, wie mit SQLite (~300/700 ms).</p>
 </section>
 <section id="logistische-regression" class="slide level2">
 <h2>Logistische Regression</h2>
 <p><em>Frage: Haben Nachtflüge häufiger &gt;10 Min. Verspätung?</em></p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(<span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a>
-<a class="sourceLine" id="cb13-2" title="2">dfflights <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">delayed=</span>dep_delay<span class="op">&gt;</span><span class="dv">10</span>,</a>
-<a class="sourceLine" id="cb13-3" title="3">                     <span class="dt">distance=</span>distance<span class="op">/</span><span class="dv">1000</span>,</a>
-<a class="sourceLine" id="cb13-4" title="4">                     <span class="dt">nightstart =</span> (dep_time<span class="op">&lt;</span><span class="dv">600</span>) <span class="op">|</span>(dep_time<span class="op">&gt;</span><span class="dv">2000</span>)) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="st">  </span><span class="kw">dfglm</span>(delayed<span class="op">~</span><span class="dv">1</span><span class="op">+</span>distance<span class="op">+</span>nightstart ,<span class="dt">data=</span>., <span class="dt">family=</span><span class="kw">binomial</span>()) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-6" title="6"><span class="st">  </span>broom<span class="op">::</span><span class="kw">tidy</span>(<span class="dt">exponentiate=</span><span class="ot">TRUE</span>,<span class="dt">conf.int=</span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>(<span class="dt">digits =</span> <span class="dv">3</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(<span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a>
+<a class="sourceLine" id="cb12-2" title="2">dfflights <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">delayed=</span>dep_delay<span class="op">&gt;</span><span class="dv">10</span>,</a>
+<a class="sourceLine" id="cb12-3" title="3">                     <span class="dt">distance=</span>distance<span class="op">/</span><span class="dv">1000</span>,</a>
+<a class="sourceLine" id="cb12-4" title="4">                     <span class="dt">nightstart =</span> (dep_time<span class="op">&lt;</span><span class="dv">600</span>) <span class="op">|</span>(dep_time<span class="op">&gt;</span><span class="dv">2000</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb12-5" title="5"><span class="st">  </span><span class="kw">dfglm</span>(delayed<span class="op">~</span><span class="dv">1</span><span class="op">+</span>distance<span class="op">+</span>nightstart ,<span class="dt">data=</span>., <span class="dt">family=</span><span class="kw">binomial</span>()) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb12-6" title="6"><span class="st">  </span>broom<span class="op">::</span><span class="kw">tidy</span>(<span class="dt">exponentiate=</span><span class="ot">TRUE</span>,<span class="dt">conf.int=</span><span class="ot">TRUE</span>) <span class="op">%&gt;%</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>(<span class="dt">digits =</span> <span class="dv">3</span>)</a></code></pre></div>
 <table>
 <thead>
 <tr class="header">
