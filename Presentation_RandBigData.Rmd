@@ -5,12 +5,17 @@ output:
     transition: fade
     center: false
     theme: white
-    highlight: tango
-    css: zireveal.css
+    highlight: default
+    css: static/zireveal.css
+    before_body: static/header.html
     fig_width: 8
     fig_height: 4.5
     fig_caption: false
-    self_contained: true
+    self_contained: false
+    lib_dir: libs
+    reveal_options:
+      slideNumber: true
+      previewLinks: true
 ---
 
 ```{r setup, include=FALSE}
@@ -20,16 +25,24 @@ library("knitr")
 library("forcats")
 library("zicolors")
 library("biglm")
+library("kableExtra")
 knitr::opts_chunk$set(echo = FALSE)
 options(knitr.kable.NA = '')
+mykable <- function(data){
+  knitr::kable(data, digits=3, format.args = list(decimal.mark=',',big.mark='.')) %>%  
+    kable_styling(c("striped", "hover", "condensed","responsive"), full_width = F) %>%
+  row_spec(0:0, bold = T, color = "white", background = "#0086C5")
+}
 ```
 
 
-## <br><br><br>R und Big(ger than memory) Data 
+## <br><br><br>**R und Big**(ger than memory) **Data** 
 
 **Dr. Lars E. Kroll** \
 *Fachbereich Data Science und Versorgungsanalysen*
 ![](https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125)
+
+Stand: `r format(as.Date(Sys.Date()),format="%d.%m.%Y")`
 
 ## Hintergrund{data-background="#0086C5"}
 
@@ -37,7 +50,7 @@ options(knitr.kable.NA = '')
 
 **R** ist bei kleinen Datensätzen sehr schnell, weil es alle Daten im Arbeitsspeicher des Computers hält.
 
-Dies wird, wenn Datensätze analyisiert werden sollen, bei Arbeit mit **R** wird im Vergleich zu Paketen wie *sas* oder *SPSS* problematisch.
+Dies wird, wenn Datensätze analysiert werden sollen, bei Arbeit mit **R** wird im Vergleich zu Paketen wie *sas* oder *SPSS* problematisch.
 
 Diese Präsentation führt in Techniken zur Analyse von Datensätzen ein, die auf die Festplatte eines Computers, nicht aber komplett in seinen Speicher passen.
 
@@ -45,8 +58,8 @@ Diese Präsentation führt in Techniken zur Analyse von Datensätzen ein, die au
 ## Technischer Hintergrund
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-data.frame("Typ"=c("RAM","HD","SSD","M2"),"Geschwindigkeit"=c(21.3,.220,.530,5)) %>% 
-  ggplot(aes(x=fct_reorder(Typ,Geschwindigkeit),y=Geschwindigkeit,fill=Typ))+geom_bar(stat="identity",show.legend = F) + theme_zi_titels() + scale_fill_zi("main4colors")  + labs(x="",y="Geschwindigkeit GB/s")
+benchmarkdata <- data.frame("Typ"=c("RAM","HD","SSD","M2"),"Geschwindigkeit"=c(21.3,.220,.530,5))
+ggplot(benchmarkdata,aes(x=fct_reorder(Typ,Geschwindigkeit),y=Geschwindigkeit,fill=Typ))+geom_bar(stat="identity",show.legend = F) + theme_zi_titels() + scale_fill_zi("main4colors")  + labs(x="",y="Geschwindigkeit GB/s")
 ```
 
 Arbeitsspeicher (RAM) ist *100 mal schneller* als eine klassische Festplatte und *4 mal* schneller als der schnellste M2 PCIE4 SSD Speicher. Je mehr Daten im RAM analysiert werden, desto besser.
@@ -69,27 +82,27 @@ Um große Datensätze mit R zu bearbeiten stehen verschiedene Lösungsansätze z
 
 ## R und Datenbanken
 
-Grundsätzlich können Daten, die bereits in einer relationalen oder nichtrelationalen Datenbank vorgehalten werden, immer direkt über geeignete Frontends analysiert werden.
+Grundsätzlich können Daten, die bereits in einer relationalen oder nicht-relationalen Datenbank vorgehalten werden, immer direkt über geeignete Frontends analysiert werden.
 
 R bietet mit dem Paket DBI aber ebenfalls eine Schnittstelle, um als Frontend einer Datenbank zu fungieren [(mehr Informationen)](https://db.rstudio.com/).
 
 R ist aber auch in der Lage, Datensätze ohne Installation zusätzlicher Software in eine Datenbank auszulagern und auf dieser zu analysieren. Dadurch ist eine Nutzung von R mit Datensätzen möglich, die nicht in den Speicher des lokalen PC passen.
 
-Das Vorgehen soll exemplarisch mit dem Beispieldatensatz *nycflights13* veranschaulicht werden.
+Das Vorgehen soll exemplarisch mit dem Beispieldaten *nycflights13* veranschaulicht werden.
 
 ## Testdatensatz *nycflights13*
 
 Der Testdatensatz umfasst `r nrow(nycflights13::flights)` Inlandsflüge, die im Jahr 2013 von den Flughäfen der Stadt New York City in Richtung von Zielen innerhalb der USA gestartet sind.
 
-Als zusätzliche Metadaten sind Informationen zu Airlines, Flughäfen, Wetter, and Flugzeugen enthalten. 
+Als zusätzliche Metadaten sind Informationen zu Airlines, Flughäfen, Wetter und Flugzeugen enthalten. 
 
-Der Datensatz passt zwar in der Regel in den Arbeitsspeicher, alle Techniken funkionieren aber auch mit größeren Datensätzen.
+Der Datensatz passt zwar in der Regel in den Arbeitsspeicher, alle Techniken funktionieren aber auch mit größeren Datensätzen.
 
 ## Erzeugen der Testdateien als csv
 
 Hier werden aus dem mitgelieferten Beispieldaten csv Dateien erstellt und gespeichert. In der Realität liegen wahrscheinlich bereits csv-Dateien vor, die bspw. mit dem *SQL Navigator* o.ä. aus einer DB extrahiert wurden. 
 
-```{r echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 library(nycflights13)
 write.csv(nycflights13::airlines,"data/airlines.csv")
 write.csv(nycflights13::flights,"data/flights.csv")
@@ -106,7 +119,8 @@ Es ist mit R möglich, große csv-Dateien in einer Datenbank zu speichern, ohne 
 library("RSQLite")
 mylocaldb <- dbConnect(RSQLite::SQLite(), "data/mylocaldb.sqlite")
 for (myname in c("flights","airlines","airports","planes")) {
-dbWriteTable(conn = mylocaldb, name = myname, value = paste0("data/",myname,".csv"), 
+dbWriteTable(conn = mylocaldb, name = myname, 
+             value = paste0("data/",myname,".csv"), 
              row.names = FALSE, header = TRUE, overwrite=TRUE)  
 }
 ```
@@ -123,7 +137,9 @@ airports <- tbl(mylocaldb,"airports")
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 flights %>% count(tailnum) %>% arrange(-n) %>% filter(tailnum!="NA") %>% 
   head(4) %>% left_join(planes,by="tailnum") %>%
-  mutate(model=paste(manufacturer,model)) %>% select(Kennung=tailnum,"Starts"=n,Modell=model,Baujahr=year) %>% knitr::kable()
+  mutate(model=paste(manufacturer,model)) %>%
+  select(Kennung=tailnum,"Starts"=n,Modell=model,Baujahr=year) %>% 
+  mykable()
 ```
 
 ## Inlands-Flugziele von NYC mit mehr als 2500 Flügen 2013
@@ -131,22 +147,25 @@ flights %>% count(tailnum) %>% arrange(-n) %>% filter(tailnum!="NA") %>%
 1. Schritt: Flugrouten auszählen
 
 ```{r message=FALSE, warning=FALSE, echo=TRUE}
-allflights <- flights %>% group_by(origin,dest) %>% count() %>% ungroup() %>% mutate(id=row_number())
+allflights <- flights %>% group_by(origin,dest) %>% count() %>% 
+  ungroup() %>%  mutate(id=row_number())
 plotdata <- bind_rows(
-  allflights %>% select(id,n,faa=origin) %>% 
-    left_join(.,
-              airports %>% select(faa,lat,lon)) %>% 
-    collect() %>% mutate(type="origin"),allflights %>% select(id,n,faa=dest) %>% left_join(.,airports %>% select(faa,lat,lon)) %>% collect() %>% mutate(type="destination"))
+  allflights %>% select(id,n,faa=origin) %>% left_join(.,
+      airports %>% select(faa,lat,lon)) %>%
+    collect() %>% mutate(type="origin"),allflights %>% 
+    select(id,n,faa=dest) %>% left_join(.,airports %>% 
+      select(faa,lat,lon)) %>% collect() %>% mutate(type="destination"))
 ```
 
 2. Schritt: Geodaten laden und Ergebnisdatensatz erstellen
 
-```{r message=FALSE, warning=FALSE,  echo=TRUE, cache=TRUE}
+```{r message=FALSE, warning=FALSE,  echo=TRUE}
 library("sf")
 library("rnaturalearth")
 world <- ne_countries(scale = "medium", returnclass = "sf")
-connections_sf <- plotdata %>% filter(!is.na(lat)) %>% st_as_sf(coords = c("lon", "lat"), crs = 4326, agr = "constant") %>% group_by(id) %>%
-  summarise(do_union = FALSE) %>%
+connections_sf <- plotdata %>% filter(!is.na(lat)) %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, agr = "constant") %>% 
+  group_by(id) %>%  summarise(do_union = FALSE) %>%
   st_cast("LINESTRING") %>% left_join(plotdata %>% select(id,n))
 ```
 
@@ -154,10 +173,13 @@ connections_sf <- plotdata %>% filter(!is.na(lat)) %>% st_as_sf(coords = c("lon"
 
 3. Schritt: Ergebnis mit ggplot und Hintergrundkarte plotten
 
-```{r echo=TRUE, message=FALSE, warning=FALSE, fig.height = 3, fig.width = 5,fig.align = "center", cache=TRUE}
-ggplot(connections_sf) + theme_void() + geom_sf(data=world,fill="lightgrey") + 
-  geom_sf(data=.%>% filter(n<=2500),show.legend = F,color="darkgrey")+ 
-  geom_sf(data=.%>% filter(n>2500),show.legend = F,color="darkred",size=1.5) + 
+```{r echo=TRUE, message=FALSE, warning=FALSE, fig.height = 3, fig.width = 5,fig.align = "center"}
+ggplot(connections_sf) + theme_void() + 
+  geom_sf(data=world,fill="lightgrey") + 
+  geom_sf(data=.%>% filter(n<=2500),
+          show.legend = F,color="darkgrey")+ 
+  geom_sf(data=.%>% filter(n>2500),
+          show.legend = F,color="darkred",size=1.5) + 
   coord_sf(expand=FALSE,
            xlim =c(st_bbox(connections_sf)[1],st_bbox(connections_sf)[3]),
            ylim=c(st_bbox(connections_sf)[2],st_bbox(connections_sf)[4]))
@@ -176,12 +198,11 @@ Es gibt auch Ansätze, Modelle direkt auf Datenbanken zu rechnen. Hier werden al
 
 **Ergebnistabelle:**
 
-```{r echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
-model <- flights %>% 
-  mutate(distance=distance/1000,
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+model <- flights %>% mutate(distance=distance/1000,
          quartal=as.character(floor(month/4)+1)) %>% 
   biglm::biglm(dep_delay~1+distance+quartal, data=.)
-broom::tidy(model) %>% knitr::kable() 
+broom::tidy(model) %>% mykable()
 ```
 
 
@@ -189,19 +210,24 @@ broom::tidy(model) %>% knitr::kable()
 
 Nein, die Arbeit mit einer DB als Backend ist **deutlich langsamer** als die Arbeit im Arbeitsspeicher! 
 
-```{r echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 flights_ram<- flights %>% collect()
 start_time <- Sys.time()
-result <- flights_ram %>% group_by(carrier) %>% summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T))
+result <- flights_ram %>% group_by(carrier) %>%
+  summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T))
 end_time <- Sys.time()
 t_ram <- round((end_time - start_time)*1000)
+```
+
+```{r message=FALSE, warning=FALSE}
 start_time <- Sys.time()
 result <- flights %>% group_by(carrier) %>% summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T)) %>% collect()
 end_time <- Sys.time()
 t_sqlite <- round((end_time - start_time)*1000)
-as.data.frame(cbind("Method"=c("RAM","SQLITE"),"Result (msec)"=c(t_ram,t_sqlite))) %>% knitr::kable()
-
+as.data.frame(cbind("Method"=c("RAM","SQLITE"),
+                    "Result (msec)"=c(t_ram,t_sqlite))) %>% mykable()
 ```
+
 
 
 ## Zwischenfazit Datenbanken
@@ -220,14 +246,14 @@ Das Konzept MapReduce ist die Basis vieler "Big Data Lösungen"
 
 Relationale Datenbanken gehen Tabellen i.d.R. zeilenweise durch, um ein Ergebnis zu generieren. 
 
-Demgegenüber setzen Lösungen für verteiltes Rechnen auf Varianten des von Google entwickelten Programmierschemas **"MapReduce"**.
+Demgegenüber setzen Lösungen für verteiltes Rechnen auf Varianten des von Google entwickelten Programmschemas **"MapReduce"**.
 
 ![](static/mapreducewordcountoverview.png){height=250px}
 (Quelle: [Groningen 2009](https://blog.trifork.com/2009/08/04/introduction-to-hadoop/))
 
 ## Prinzip
 
-Eine *Datenbank* arbeit in der Regel seqeuntiell und benötigt für **n Zeilen n Arbeitschritte**, um ein Ergebnis zu generieren. 
+Eine *Datenbank* arbeit in der Regel sequentiell und benötigt für **n Zeilen n Arbeitsschritte**, um ein Ergebnis zu generieren. 
 
 Ein *verteilter Ansatz* benötigt zwar mehr Schritte (n+m+r mit m:Mapping, r:Reduktion) verteilt diese aber auf mehre Knoten. 
 
@@ -235,16 +261,21 @@ Die **Analysezeit**  steigt im Fall der *Datenbanken* also proportional zur Anza
 
 **Je größer n wird, desto mehr Vorteile hat MapReduce gegenüber eine sequentiellen Verarbeitung.**
 
-## Hypotetischer Geschwindidkeitsvergleich
+## Hypothetischer Geschwindigkeitsvergleich
 
 Je höher die Zahl der Knoten, desto größer ist der Overhead durch den Algorithmus, aber auch der potentielle Geschwindigkeitsvorteil bei sehr großen Datenmengen. 
 
 ```{r message=FALSE, warning=FALSE}
-tibble("Row"=seq(3,10,1)) %>% mutate(Zeilen = 10^Row, Dauer_pro_Zeile=.001,Knoten=6,Maps=Knoten,Reduces=Knoten,Overhead=.1*(Maps+Reduces),Dauer_DB=Zeilen*Dauer_pro_Zeile,Dauer_MR=(Zeilen/Knoten)*Dauer_pro_Zeile+Dauer_pro_Zeile*Maps+Dauer_pro_Zeile*Reduces+Overhead,Zeilen=format(Zeilen,scientific = F,big.mark = ".",decimal.mark = ","),Unterschied=paste(round(100*(Dauer_MR/Dauer_DB)),"%"),Dauer_MR=format(round(Dauer_MR),big.mark = "."),Dauer_DB=format(round(Dauer_DB),big.mark = ".",scientific = F)) %>% select(-Row,-Maps,-Reduces,Overhead) %>% knitr::kable(digits = 4)
+tibble("Row"=seq(3,10,1)) %>% mutate(Zeilen = 10^Row, Dauer_pro_Zeile=.001,Knoten=6,Maps=Knoten,Reduces=Knoten,Overhead=.1*(Maps+Reduces),Dauer_DB=Zeilen*Dauer_pro_Zeile,Dauer_MR=(Zeilen/Knoten)*Dauer_pro_Zeile+Dauer_pro_Zeile*Maps+Dauer_pro_Zeile*Reduces+Overhead,Zeilen=format(Zeilen,scientific = F,big.mark = ".",decimal.mark = ","),Unterschied=paste(round(100*(Dauer_MR/Dauer_DB)),"%"),Dauer_MR=format(round(Dauer_MR),big.mark = "."),Dauer_DB=format(round(Dauer_DB),big.mark = ".",scientific = F)) %>% select(-Row,-Maps,-Reduces,Overhead) %>% 
+  rename("Dauer pro Zeile"=Dauer_pro_Zeile,
+         "Dauer DB"=Dauer_DB,
+         "Dauer MR"=Dauer_MR
+         ) %>%
+  mykable()
 ```
 
 *Annahme:* \
-Der Overhead für Mapreduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0.1 * 2 * Knoten
+Der Overhead für MapReduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0.1 * 2 * Knoten
 
 
 ## Softwarebibliotheken
@@ -255,60 +286,63 @@ Der Overhead für Mapreduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0
 
 **CUDA** ist eine vergleichbare Implementierung zum parallelen Ausführung gleichförmiger Aufgaben auf den Kernen von Grafikprozessoren (GPU). 
 
-**Disk.Frame** und **dask** sind R (bzw. Python) Bibliotheken, die für die hochparallelisierte Arbeit auf lokalen Rechnern nutzbar sind.
+**Disk.Frame** und **dask** sind R (bzw. Python) Bibliotheken, die für die hoch parallelisierte Arbeit auf lokalen Rechnern nutzbar sind.
 
 **Tensorflow GPU**, **RAPIDS** und **BlazingSQL** nutzen GPUs für noch höhere Geschwindigkeiten. Sie sind nur in Python voll implementiert und erfordern teilweise Linux als OS.
 
-## Die Bibliothek disk.frames für R
+## Die Bibliothek **disk.frames** für R
 
-Das Paket *disk.frame* wurde entwickelt, um mit R Daten paralelisiert zur analysieren, die nicht in den Arbeitsspeicher (RAM) passen. Es teilt den Datensatz dazu in Teildatensätze auf.
+Das Paket **disk.frame** wurde entwickelt, um mit R Daten parallelisiert zur analysieren, die nicht in den Arbeitsspeicher (RAM) passen. Es teilt den Datensatz dazu in Einzeldatensätze auf.
 
-Diese Teildatensätze werden in einem Ordner gespeichert und können gemeinsam mit R wie ein großer Datensatz analysiert werden.
+Diese **Einzeldatensätze** werden in einem Ordner gespeichert und können gemeinsam mit R wie ein großer Datensatz analysiert werden.
 
-Der Ansatz von *disk.frame* ähnelt dabei Apache Spark, Dask und ähnlichen Systemen. Er ist besonders für medium sized data geeignet, die nicht in den RAM, wohl aber auf die Festplatte passen. 
+Der Ansatz von *disk.frame* ähnelt dabei Apache Spark, Dask und ähnlichen Systemen. Er ist besonders **für medium sized data geeignet**, die nicht in den RAM, wohl aber auf die Festplatte passen. 
 
-Für medium sized data, ist die Nutzung eines Computer-Clusters oft nicht nötig und der.
+Für medium sized data, ist die Nutzung eines Computer-Clusters nicht nötig, durch disk.frame wird der **Overhead** bei vergleichbarer Performance deutlich reduziert
 
 ## Wichtige Konzepte
 
 *disk.frame* nutzt wie die meisten Frameworks für verteilte Analysen die Konzepte *chunks* und *shards* bei der Datenaufteilung. Der Umgang damit ist zentral, für die Performance des Frameworks.
 
-Die Teildatensätze werden als "chunks" bezeichnet. Sie habnen eine feste Größe. Ihre Größe kann **entweder** durch den Parameter *Anzahl der Chunks* **oder** durch den Parameter *Chunk-Größe*  beeinflusst werden. 
+Die Einzeldatensätze werden als "chunks" bezeichnet. Sie haben eine feste Größe. Ihre Größe kann **entweder** durch den Parameter *Anzahl der Chunks* **oder** durch den Parameter *Chunk-Größe*  beeinflusst werden. 
 
-Falls bestimmte Partitionen der Daten regelhaft vorkommen, bietet es sich an, die Teildatensätze in **shards** aufgrund eines sog. sharding-keys zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt. Dies funktioniert umso effektiver, je gleicher sich die Werte des sharding keys in den Daten verteilen (bspw. KV, Quartal, BSNR bei amb. Abrechnungsdaten). 
+Falls bestimmte Partitionen der Daten regelhaft vorkommen, bietet es sich an, die Einzeldatensätze in **shards** aufgrund eines sog. sharding-keys zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt. Dies funktioniert umso effektiver, je gleicher sich die Werte des sharding keys in den Daten verteilen (bspw. KV, Quartal, BSNR bei amb. Abrechnungsdaten). 
 
 ## **disk.frame** Geschwindigkeitstest
 
-Die chunk-Anzahl erntspricht hier der Anzahl der CPUs (max. Performance).
+Die chunk-Anzahl entspricht hier der Anzahl der CPUs (max. Performance).
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 suppressPackageStartupMessages(library(disk.frame))
 setup_disk.frame() # 6 Workers
-```
-```{r echo=TRUE, message=TRUE, warning=FALSE}
 dfflights <- csv_to_disk.frame(
-  "data/flights.csv", outdir = "tmp_flights.df",  overwrite = T)
+  "data/flights.csv", outdir = "data/tmp_flights.df",  overwrite = T)
+```
 
+```{r message=FALSE, warning=FALSE}
 start_time <- Sys.time()
 result <- flights %>% group_by(carrier) %>% summarise(Mean_delay=mean(sched_dep_time-dep_time,na.rm=T)) %>% collect()
 end_time <- Sys.time()
 dauer <- round((end_time - start_time)*1000)
 ```
 
-Die Analyse dauert mit `r paste(dauer,"ms")` zwar länger als im RAM (~150 ms), aber teilweise nur etwa halb so lange, wie mit SQLite (~300/700 ms). 
 
+Die Analyse dauert mit `r paste(dauer,"ms")` zwar länger als im RAM (`r t_ram` ms), ist aber bereits mit diesem Datensatz, trotz des Overheads durch die Parallelisierung,  ebenso schnell wie SQLite (`r t_sqlite`). 
+
+*Hinweis: Die Ergebnisse für disk.frames und SQLite variieren, je nach momentaner Auslastung der Festplatte.*
 
 ## Logistische Regression
 
 *Frage: Haben Nachtflüge häufiger >10 Min. Verspätung?*
 
 ```{r  echo=TRUE, message=TRUE, warning=FALSE}
-dfflights <- csv_to_disk.frame("data/flights.csv", outdir = "tmp_flights.df",  overwrite = T)
+dfflights <- csv_to_disk.frame("data/flights.csv", 
+                               outdir = "data/tmp_flights.df",  overwrite = T)
 dfflights %>% mutate(delayed=dep_delay>10,
                      distance=distance/1000,
                      nightstart = (dep_time<600) |(dep_time>2000)) %>%
   dfglm(delayed~1+distance+nightstart ,data=., family=binomial()) %>%
-  broom::tidy(exponentiate=TRUE,conf.int=TRUE) %>% knitr::kable(digits = 3)
+  broom::tidy(exponentiate=TRUE,conf.int=TRUE) %>% mykable()
 ```
 
 *Man sollte lieber tagsüber von NYC starten...*
@@ -316,13 +350,9 @@ dfflights %>% mutate(delayed=dep_delay>10,
 ## Fazit
 
 - Insgesamt bietet R **verschiedene Möglichkeiten**, mit großen Datensätzen zu arbeiten. 
-- Ein einfacheste Weg ist die Nutzung einer SQLite **Datenbank als Backend**.
+- Ein einfachste Weg ist die Nutzung einer SQLite **Datenbank als Backend**.
 - Mit der neuen R-Bibliothek "disk.frame" ist demgegenüber aber ein **zusätzlicher Performancegewinn** zu erzielen.
 - Hinsichtlich der Nutzbarkeit **statistischen Verfahren** bestehen bei großen Datensätzen einige Limitationen, da nicht alle Modelle implementiert sind.
 - Viele **Viele Regressionsanalysen** sind möglich (alle glm-Modelle, wie lineare und logistische Regression)
-
-
-
-
 
 
