@@ -837,7 +837,7 @@ Result (msec)
 RAM
 </td>
 <td style="text-align:left;">
-43
+9
 </td>
 </tr>
 <tr>
@@ -845,7 +845,7 @@ RAM
 SQLITE
 </td>
 <td style="text-align:left;">
-183
+231
 </td>
 </tr>
 </tbody>
@@ -1125,7 +1125,7 @@ Der Overhead für MapReduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0
 <a class="sourceLine" id="cb10-2" title="2"><span class="kw">setup_disk.frame</span>() <span class="co"># 6 Workers</span></a>
 <a class="sourceLine" id="cb10-3" title="3">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(</a>
 <a class="sourceLine" id="cb10-4" title="4">  <span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;data/tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a></code></pre></div>
-<p>Die Analyse dauert mit 186 ms zwar länger als im RAM (43 ms), ist aber bereits mit diesem Datensatz, trotz des Overheads durch die Parallelisierung, ebenso schnell wie SQLite (183).</p>
+<p>Die Analyse dauert mit 190 ms zwar länger als im RAM (9 ms), ist aber bereits mit diesem Datensatz, trotz des Overheads durch die Parallelisierung, ebenso schnell wie SQLite (231).</p>
 <p><em>Hinweis: Die Ergebnisse für disk.frames und SQLite variieren, je nach momentaner Auslastung der Festplatte.</em></p>
 </section>
 <section id="logistische-regression" class="slide level2">
