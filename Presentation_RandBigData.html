@@ -2137,9 +2137,11 @@ quartal4.0
 </tr>
 </tbody>
 </table>
+<p><em>Ergebnis:</em><br />
+<em>Je weiter das Ziel, desto pünktlicher der Flug. Aber im Winter- und Sommerquartal sind Flüge weniger pünktlich.</em></p>
 </section>
-<section id="geschwindigkeitsvorteil-durch-datenbank" class="slide level2">
-<h2>Geschwindigkeitsvorteil durch Datenbank?</h2>
+<section id="geschwindigkeitsvorteile-durch-die-datenbank" class="slide level2">
+<h2>Geschwindigkeitsvorteile durch die Datenbank?</h2>
 <p>Nein, die Arbeit mit einer DB als Backend ist <strong>deutlich langsamer</strong> als die Arbeit im Arbeitsspeicher!</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">flights_ram&lt;-<span class="st"> </span>flights <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">collect</span>()</a>
 <a class="sourceLine" id="cb9-2" title="2">start_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
@@ -2164,7 +2166,7 @@ Result (msec)
 RAM
 </td>
 <td style="text-align:left;">
-25
+30
 </td>
 </tr>
 <tr>
@@ -2172,7 +2174,7 @@ RAM
 SQLITE
 </td>
 <td style="text-align:left;">
-229
+210
 </td>
 </tr>
 </tbody>
@@ -2441,9 +2443,9 @@ Der Overhead für MapReduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0
 </section>
 <section id="wichtige-konzepte" class="slide level2">
 <h2>Wichtige Konzepte</h2>
-<p><em>disk.frame</em> nutzt wie die meisten Frameworks für verteilte Analysen die Konzepte <em>chunks</em> und <em>shards</em> bei der Datenaufteilung. Der Umgang damit ist zentral, für die Performance des Frameworks.</p>
-<p>Die Einzeldatensätze werden als “chunks” bezeichnet. Sie haben eine feste Größe. Ihre Größe kann <strong>entweder</strong> durch den Parameter <em>Anzahl der Chunks</em> <strong>oder</strong> durch den Parameter <em>Chunk-Größe</em> beeinflusst werden.</p>
-<p>Falls bestimmte Partitionen der Daten regelhaft vorkommen, bietet es sich an, die Einzeldatensätze in <strong>shards</strong> aufgrund eines sog. sharding-keys zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt. Dies funktioniert umso effektiver, je gleicher sich die Werte des sharding keys in den Daten verteilen (bspw. KV, Quartal, BSNR bei amb. Abrechnungsdaten).</p>
+<p><em>disk.frame</em> nutzt wie die meisten Frameworks für verteilte Analysen die Konzepte <strong>chunks</strong> und <strong>shards</strong> bei der Datenaufteilung (<strong>Partitionierung</strong>). Der Umgang damit ist zentral, für die Performance des Frameworks.</p>
+<p>Die <strong>Einzeldatensätze werden als “chunks” bezeichnet</strong>. Sie haben eine feste Größe. Ihre Größe kann entweder durch den Parameter “Anzahl Chunks” oder durch den Parameter <em>Chunk-Größe</em> beeinflusst werden.</p>
+<p>Falls Partitionen regelhaft vorkommen, bietet es sich an, die Einzeldatensätze in shards aufgrund eines sog. <strong>sharding-keys</strong> zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt.</p>
 </section>
 <section id="disk.frame-geschwindigkeitstest" class="slide level2">
 <h2><strong>disk.frame</strong> Geschwindigkeitstest</h2>
@@ -2452,7 +2454,7 @@ Der Overhead für MapReduce Operationen entspricht etwa 0.1 * (Maps+Reduces) = 0
 <a class="sourceLine" id="cb10-2" title="2"><span class="kw">setup_disk.frame</span>() <span class="co"># 6 Workers</span></a>
 <a class="sourceLine" id="cb10-3" title="3">dfflights &lt;-<span class="st"> </span><span class="kw">csv_to_disk.frame</span>(</a>
 <a class="sourceLine" id="cb10-4" title="4">  <span class="st">&quot;data/flights.csv&quot;</span>, <span class="dt">outdir =</span> <span class="st">&quot;data/tmp_flights.df&quot;</span>,  <span class="dt">overwrite =</span> T)</a></code></pre></div>
-<p>Die Analyse dauert mit 210 ms zwar länger als im RAM (25 ms), ist aber bereits mit diesem Datensatz, trotz des Overheads durch die Parallelisierung, ebenso schnell wie SQLite (229).</p>
+<p>Die Analyse dauert mit 232 ms zwar länger als im RAM (30 ms), ist aber bereits mit diesem Datensatz, trotz des Overheads durch die Parallelisierung, ebenso schnell wie SQLite (210).</p>
 <p><em>Hinweis: Die Ergebnisse für disk.frames und SQLite variieren, je nach momentaner Auslastung der Festplatte.</em></p>
 </section>
 <section id="logistische-regression" class="slide level2">

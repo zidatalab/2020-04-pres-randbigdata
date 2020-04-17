@@ -205,8 +205,10 @@ model <- flights %>% mutate(distance=distance/1000,
 broom::tidy(model) %>% mykable()
 ```
 
+*Ergebnis:* \
+*Je weiter das Ziel, desto pünktlicher der Flug. Aber im Winter- und Sommerquartal sind Flüge weniger pünktlich.*
 
-## Geschwindigkeitsvorteil durch Datenbank?
+## Geschwindigkeitsvorteile durch die Datenbank?
 
 Nein, die Arbeit mit einer DB als Backend ist **deutlich langsamer** als die Arbeit im Arbeitsspeicher! 
 
@@ -302,11 +304,11 @@ Für medium sized data, ist die Nutzung eines Computer-Clusters nicht nötig, du
 
 ## Wichtige Konzepte
 
-*disk.frame* nutzt wie die meisten Frameworks für verteilte Analysen die Konzepte *chunks* und *shards* bei der Datenaufteilung. Der Umgang damit ist zentral, für die Performance des Frameworks.
+*disk.frame* nutzt wie die meisten Frameworks für verteilte Analysen die Konzepte **chunks** und **shards** bei der Datenaufteilung (**Partitionierung**). Der Umgang damit ist zentral, für die Performance des Frameworks.
 
-Die Einzeldatensätze werden als "chunks" bezeichnet. Sie haben eine feste Größe. Ihre Größe kann **entweder** durch den Parameter *Anzahl der Chunks* **oder** durch den Parameter *Chunk-Größe*  beeinflusst werden. 
+Die **Einzeldatensätze werden als "chunks" bezeichnet**. Sie haben eine feste Größe. Ihre Größe kann entweder durch den Parameter "Anzahl Chunks" oder durch den Parameter *Chunk-Größe*  beeinflusst werden. 
 
-Falls bestimmte Partitionen der Daten regelhaft vorkommen, bietet es sich an, die Einzeldatensätze in **shards** aufgrund eines sog. sharding-keys zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt. Dies funktioniert umso effektiver, je gleicher sich die Werte des sharding keys in den Daten verteilen (bspw. KV, Quartal, BSNR bei amb. Abrechnungsdaten). 
+Falls Partitionen regelhaft vorkommen, bietet es sich an, die Einzeldatensätze in shards aufgrund eines sog. **sharding-keys** zu gruppieren. Dadurch können große Teile der Daten herausgefiltert werde und die Analyse wird beschleunigt. 
 
 ## **disk.frame** Geschwindigkeitstest
 
