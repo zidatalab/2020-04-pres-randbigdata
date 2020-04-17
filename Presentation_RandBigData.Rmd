@@ -11,7 +11,7 @@ output:
     fig_width: 8
     fig_height: 4.5
     fig_caption: false
-    self_contained: false
+    self_contained: true
     lib_dir: libs
     reveal_options:
       slideNumber: true
